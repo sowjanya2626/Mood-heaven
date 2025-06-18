@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mood Heaven</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(120deg, #ffecd2 0%, #fcb69f 100%);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+    }
+
+    .page {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 30px;
+      border-radius: 25px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      max-width: 90vw;
+      width: 400px;
+      animation: fadeIn 1s ease forwards;
+    }
+
+    .page.active {
+      display: flex;
+    }
+
+    h1, h2 {
+      font-family: 'Lobster', cursive;
+      margin-bottom: 20px;
+      color: #2d3436;
+    }
+
+    input, select, button {
+      width: 90%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 14px;
+      font-size: 1em;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    button {
+      background-color: #ff7675;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #d63031;
+    }
+
+    #quote {
+      font-style: italic;
+      margin: 20px;
+      color: #555;
+      text-align: center;
+    }
+
+    canvas {
+      border: 4px dashed #fd79a8;
+      border-radius: 15px;
+      background-color: #fff;
+      margin-top: 20px;
+    }
+
+    .gallery-item {
+      background: #ffffffdd;
+      margin: 10px;
+      padding: 10px;
+      border-radius: 14px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .gallery-item img {
+      width: 100px;
+      height: 100px;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Breathing animation */
+    .breathing-circle {
+      width: 120px;
+      height: 120px;
+      background-color: #74b9ff;
+      border-radius: 50%;
+      margin: 20px auto;
+      animation: breathe 4s ease-in-out infinite;
+      opacity: 0.7;
+    }
+
+    @keyframes breathe {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.6;
+      }
+      50% {
+        transform: scale(1.3);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Signup Page -->
+<div class="page active" id="signupPage">
+  <h1>Sign Up</h1>
+  <input type="text" id="signupEmail" placeholder="Email ID">
+  <input type="password" id="signupPassword" placeholder="Password">
+  <button onclick="signupUser()">Sign Up</button>
+  <p id="signupError" style="color: red;"></p>
+  <p>Already have an account? <a href="#" onclick="showPage('loginPage')">Login</a></p>
+</div>
+
+<!-- Login Page -->
+<div class="page" id="loginPage">
+  <h1>Login</h1>
+  <input type="text" id="loginEmail" placeholder="Email ID">
+  <input type="password" id="loginPassword" placeholder="Password">
+  <button onclick="loginUser()">Login</button>
+  <p id="loginError" style="color: red;"></p>
+</div>
+
+<!-- Welcome Page -->
+<div class="page" id="welcomePage">
+  <h1>Welcome to Mood Heaven</h1>
+  <input type="text" id="usernameInput" placeholder="Enter your name">
+  <button onclick="startApp()">Enter</button>
+</div>
+
+<!-- Mood Selection Page -->
+<div class="page" id="mainApp">
+  <h2 id="personalMessage"></h2>
+  <div class="breathing-circle"></div>
+  <select id="mood" onchange="changeMood()">
+    <option value="">-- Select Your Mood --</option>
+    <option value="relaxed">Relaxed</option>
+    <option value="stressed">Stressed</option>
+    <option value="happy">Happy</option>
+    <option value="anxious">Anxious</option>
+    <option value="focused">Focused</option>
+    <option value="hopeful">Hopeful</option>
+    <option value="grateful">Grateful</option>
+    <option value="refreshed">Refreshed</option>
+    <option value="mindful">Mindful</option>
+    <option value="uplifted">Uplifted</option>
+  </select>
+  <div id="quote"></div>
+  <div id="playlistEmbed"></div>
+  <button onclick="showPage('drawApp')">🎨 Draw Your Mood</button>
+</div>
+
+<!-- Drawing Page -->
+<div class="page" id="drawApp">
+  <h2>🎨 Draw Your Mood</h2>
+  <input type="color" id="colorPicker">
+  <input type="range" id="brushSize" min="1" max="30" value="5">
+  <input type="text" id="moodTitle" placeholder="e.g., Happy, Calm">
+  <button onclick="clearCanvas()">🧹 Clear</button>
+  <button onclick="saveToLocal()">💾 Save</button>
+  <button onclick="showPage('mainApp')">⬅️ Back</button>
+  <canvas id="canvas" width="360" height="460"></canvas>
+  <h2>🖼️ My Mood Gallery</h2>
+  <div id="gallery"></div>
+</div>
+
+<!-- JavaScript Section -->
+<script>
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  const quotes = {
+    relaxed: ["Take a deep breath, everything will be okay."],
+    stressed: ["You are stronger than your stress."],
+    happy: ["Smiles are contagious – spread one!"],
+    anxious: ["This too shall pass."],
+    focused: ["Silence the noise and center yourself."],
+    hopeful: ["Every day is a fresh start."],
+    grateful: ["Gratitude turns what we have into enough."],
+    refreshed: ["Let the fresh air fill your soul."],
+    mindful: ["Be here now."],
+    uplifted: ["Shine your light."]
+  };
+
+  const spotifyPlaylists = {
+    relaxed: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4sWSpwq3LiO",
+    stressed: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4E3UdUs7fUx",
+    happy: "https://open.spotify.com/embed/playlist/37i9dQZF1DXdPec7aLTmlC",
+    anxious: "https://open.spotify.com/embed/playlist/37i9dQZF1DX3rxVfibe1L0",
+    focused: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4sWSpwq3LiO",
+    hopeful: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4fpCWaHOned",
+    grateful: "https://open.spotify.com/embed/playlist/37i9dQZF1DX0SM0LYsmbMT",
+    refreshed: "https://open.spotify.com/embed/playlist/37i9dQZF1DWZzMyy3FxUzt",
+    mindful: "https://open.spotify.com/embed/playlist/37i9dQZF1DWU0ScTcjJBdj",
+    uplifted: "https://open.spotify.com/embed/playlist/37i9dQZF1DX3rxVfibe1L0"
+  };
+
+  function signupUser() {
+    const email = document.getElementById("signupEmail").value;
+    const password = document.getElementById("signupPassword").value;
+    let users = JSON.parse(localStorage.getItem("users")) || {};
+    if (users[email]) {
+      document.getElementById("signupError").innerText = "Account already exists!";
+    } else {
+      users[email] = password;
+      localStorage.setItem("users", JSON.stringify(users));
+      localStorage.setItem("loggedInUser", email);
+      showPage("welcomePage");
+    }
+  }
+
+  function loginUser() {
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+    let users = JSON.parse(localStorage.getItem("users")) || {};
+    if (users[email] && users[email] === password) {
+      localStorage.setItem("loggedInUser", email);
+      showPage("welcomePage");
+    } else {
+      document.getElementById("loginError").innerText = "Invalid email or password!";
+    }
+  }
+
+  function startApp() {
+    const name = document.getElementById("usernameInput").value;
+    if (!name) return alert("Please enter your name.");
+    document.getElementById("personalMessage").innerText = `Hi ${name}, how are you feeling today?`;
+    showPage("mainApp");
+  }
+
+  function changeMood() {
+    const mood = document.getElementById("mood").value;
+    document.getElementById("quote").innerText = quotes[mood]?.[0] || "";
+    document.getElementById("playlistEmbed").innerHTML = mood ?
+      `<iframe src="${spotifyPlaylists[mood]}" width="300" height="380" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>` : "";
+  }
+
+  let canvas, ctx, painting = false;
+
+  window.onload = () => {
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
+    canvas.addEventListener("mousedown", startDraw);
+    canvas.addEventListener("mouseup", endDraw);
+    canvas.addEventListener("mousemove", draw);
+    canvas.addEventListener("touchstart", (e) => startDraw(e.touches[0]));
+    canvas.addEventListener("touchend", endDraw);
+    canvas.addEventListener("touchmove", (e) => draw(e.touches[0]));
+    displayGallery();
+  };
+
+  function getX(e) { return e.clientX - canvas.getBoundingClientRect().left; }
+  function getY(e) { return e.clientY - canvas.getBoundingClientRect().top; }
+
+  function startDraw(e) {
+    painting = true;
+    ctx.beginPath();
+    ctx.moveTo(getX(e), getY(e));
+  }
+
+  function endDraw() { painting = false; }
+
+  function draw(e) {
+    if (!painting) return;
+    ctx.lineTo(getX(e), getY(e));
+    ctx.strokeStyle = document.getElementById("colorPicker").value;
+    ctx.lineWidth = document.getElementById("brushSize").value;
+    ctx.lineCap = "round";
+    ctx.stroke();
+  }
+
+  function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function saveToLocal() {
+    const userKey = localStorage.getItem("loggedInUser") || "guest";
+    const imageData = canvas.toDataURL("image/png");
+    const moodName = document.getElementById("moodTitle").value || "My Mood";
+    const timestamp = new Date().toLocaleString();
+    let gallery = JSON.parse(localStorage.getItem("moodGallery_" + userKey)) || [];
+    gallery.push({ mood: moodName, image: imageData, date: timestamp });
+    localStorage.setItem("moodGallery_" + userKey, JSON.stringify(gallery));
+    alert("🎉 Drawing saved!");
+    displayGallery();
+  }
+
+  function displayGallery() {
+    const userKey = localStorage.getItem("loggedInUser") || "guest";
+    const gallery = JSON.parse(localStorage.getItem("moodGallery_" + userKey)) || [];
+    const galleryDiv = document.getElementById("gallery");
+    galleryDiv.innerHTML = "";
+    gallery.forEach((item, index) => {
+      const box = document.createElement("div");
+      box.className = "gallery-item";
+      const img = document.createElement("img");
+      img.src = item.image;
+      const label = document.createElement("div");
+      label.innerText = item.mood;
+      const restoreBtn = document.createElement("button");
+      restoreBtn.innerText = "Restore";
+      restoreBtn.onclick = () => loadFromLocal(item.image, item.mood);
+      const deleteBtn = document.createElement("button");
+      deleteBtn.innerText = "🗑️ Delete";
+      deleteBtn.onclick = () => deleteDrawing(index);
+      box.appendChild(img);
+      box.appendChild(label);
+      box.appendChild(restoreBtn);
+      box.appendChild(deleteBtn);
+      galleryDiv.appendChild(box);
+    });
+  }
+
+  function loadFromLocal(imageData, moodName) {
+    const img = new Image();
+    img.onload = function () {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      document.getElementById("moodTitle").value = moodName;
+    };
+    img.src = imageData;
+  }
+
+  function deleteDrawing(index) {
+    const userKey = localStorage.getItem("loggedInUser") || "guest";
+    let gallery = JSON.parse(localStorage.getItem("moodGallery_" + userKey)) || [];
+    gallery.splice(index, 1);
+    localStorage.setItem("moodGallery_" + userKey, JSON.stringify(gallery));
+    displayGallery();
+  }
+</script>
+</body>
+</html>
